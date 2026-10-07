@@ -345,6 +345,14 @@ plot_df = agg.dropna(subset=["sales_growth_willow", "sales_growth_rm"]).copy()
 plot_df["Mix"] = plot_df["Mix"].fillna("Unknown")
 plot_df["Gap"] = plot_df["opportunity"].clip(lower=0)
 
+# Growth in the workbook is expressed in percentage points (e.g. 8.8 means 8.8%).
+# Exclude clearly malformed/extreme growth rows from this visualization so they
+# cannot stretch the axes into the thousands of percent.
+plot_df = plot_df[
+    plot_df["sales_growth_willow"].between(-100, 100)
+    & plot_df["sales_growth_rm"].between(-100, 100)
+].copy()
+
 fig2 = px.scatter(
     plot_df,
     x="sales_growth_rm",
@@ -373,6 +381,8 @@ fig2.add_shape(
     xref="paper", yref="paper",
     line=dict(dash="dash")
 )
+fig2.update_xaxes(ticksuffix="%")
+fig2.update_yaxes(ticksuffix="%")
 fig2.update_layout(height=600)
 st.plotly_chart(fig2, use_container_width=True)
 
