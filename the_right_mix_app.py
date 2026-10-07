@@ -163,17 +163,27 @@ with st.sidebar:
 
     markets = sorted(df["Market"].dropna().unique().tolist())
     selected_markets = st.multiselect(
-        "Market",
+        "Local Market",
         markets,
         default=markets,
-        help="Choose one or several markets.",
+        help="Choose one or several local markets. Department and Category options will respond to this selection.",
     )
 
-    departments = sorted(df["Department"].replace("", np.nan).dropna().unique().tolist())
+    # Department choices respond to the selected Local Market(s).
+    department_source = df.copy()
+    if selected_markets:
+        department_source = department_source[
+            department_source["Market"].isin(selected_markets)
+        ]
+
+    departments = sorted(
+        department_source["Department"].replace("", np.nan).dropna().unique().tolist()
+    )
     selected_departments = st.multiselect(
         "Department",
         departments,
         default=[],
+        help="Choose one or several departments. Options are limited to the selected local market(s).",
     )
 
     # Category choices respond to the selected market(s) and department(s).
@@ -238,7 +248,7 @@ r_growth = combined_growth(totals, "RM Sales", "RM Sales Growth")
 
 st.caption(
     f"{len(filtered):,} source rows • "
-    f"{len(selected_markets) if selected_markets else 0} selected market(s) • "
+    f"{len(selected_markets) if selected_markets else 0} selected local market(s) • "
     f"Latest 52 weeks"
 )
 
