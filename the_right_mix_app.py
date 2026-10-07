@@ -176,6 +176,23 @@ with st.sidebar:
         default=[],
     )
 
+    # Category choices respond to the selected market(s) and department(s).
+    category_source = df.copy()
+    if selected_markets:
+        category_source = category_source[category_source["Market"].isin(selected_markets)]
+    if selected_departments:
+        category_source = category_source[category_source["Department"].isin(selected_departments)]
+
+    categories = sorted(
+        category_source["Category"].replace("", np.nan).dropna().unique().tolist()
+    )
+    selected_categories = st.multiselect(
+        "Category",
+        categories,
+        default=[],
+        help="Choose one or several categories. Leave blank to include all categories.",
+    )
+
     level = st.radio(
         "Opportunity level",
         ["Category", "Subcategory"],
@@ -197,13 +214,21 @@ if selected_markets:
     filtered = filtered[filtered["Market"].isin(selected_markets)]
 if selected_departments:
     filtered = filtered[filtered["Department"].isin(selected_departments)]
+if selected_categories:
+    # Keep both the selected category rows and their subcategory children.
+    filtered = filtered[filtered["Category"].isin(selected_categories)]
 
 if filtered.empty:
     st.warning("No data matches the current filters.")
     st.stop()
 
-# Department totals provide the overall KPIs without counting child rows twice.
-totals = filtered[filtered["Category"] == ""]
+# Use the appropriate supplied total rows without double-counting children.
+# When Category is filtered, department-total rows are no longer present, so
+# category-total rows provide the KPI base.
+if selected_categories:
+    totals = filtered[(filtered["Category"] != "") & (filtered["Subcategory"] == "")]
+else:
+    totals = filtered[filtered["Category"] == ""]
 willow_sales = totals["Willow Sales"].sum()
 rm_sales = totals["RM Sales"].sum()
 opportunity = totals["Opportunity Gap"].sum()
